@@ -1,65 +1,66 @@
 ﻿open System
 open Flips
 open Flips.Types
+open Flips.SliceMap
+open Flips.UnitsOfMeasure
 
+type [<Measure>] USD
+type [<Measure>] Item
+type [<Measure>] Lb
 
 // Declare the parameters for our model
-let hamburgerProfit = 1.50
-let hotdogProfit = 1.20
-let hamburgerBuns = 300.0
-let hotdogBuns = 200.0
-let hamburgerWeight = 0.5
-let hotdogWeight = 0.4
-let maxTruckWeight = 200.0
+let items = ["Hamburger"; "HotDog"; "Pizza"]
+let locations = ["Woodstock"; "Sellwood"; "Portland"]
+let profit = 
+    [
+        (("Woodstock", "Hamburger"), 19.50<USD/Item>); (("Sellwood", "Hamburger"), 1.40<USD/Item>); (("Portland", "Hamburger"), 1.90<USD/Item>)
+        (("Woodstock", "HotDog"   ), 1.20<USD/Item>); (("Sellwood", "HotDog"   ), 1.50<USD/Item>); (("Portland", "HotDog"   ), 1.80<USD/Item>)
+        (("Woodstock", "Pizza"    ), 2.20<USD/Item>); (("Sellwood", "Pizza"    ), 1.70<USD/Item>); (("Portland", "Pizza"    ), 2.00<USD/Item>)
+    ] |> SMap2.ofList
 
+let maxIngredients = SMap.ofList [("Hamburger", 900.0<Item>); ("HotDog", 600.0<Item>); ("Pizza", 400.0<Item>)]
+let itemWeight = SMap.ofList [("Hamburger", 15.5<Lb/Item>); ("HotDog", 0.4<Lb/Item>); ("Pizza", 0.6<Lb/Item>)]
+let maxTruckWeight = SMap.ofList [("Woodstock", 200.0<Lb>); ("Sellwood", 30.0<Lb>); ("Portland", 28.0<Lb>) ]
 
-//create: (name:string) -> (decisionType:DecisionType) -> Decision
-//createBoolean: (name:string) -> Decision
-//createInteger: (name:string) -> (lowerBound:float) -> (upperBound:float) -> Decision
-//createContinuous: (name:string) -> (lowerBound:float) -> (upperBound:float) -> Decision
-
-let numberOfHamburgers = Decision.createContinuous "NumberOfHamburgers" 0.0 infinity
-let numberOfHotdogs = Decision.createContinuous "NumberOfHotDogs" 0.0 infinity
-
+// Create Decisions for each loation and item using a DecisionBuilder
+// Turn the result into a `SMap2`
+let numberOfItem =
+    DecisionBuilder<Item> "NumberOf" {
+        for location in locations do
+        for item in items ->
+            Continuous (0.0<Item>, 1_000_000.0<Item>)
+    } |> SMap2.ofSeq
 
 // Create the Linear Expression for the objective
-let objectiveExpression = hamburgerProfit * numberOfHamburgers + hotdogProfit * numberOfHotdogs
+let objectiveExpression = sum (profit .* numberOfItem)
 
 // Create an Objective with the name "MaximizeRevenue" the goal of Maximizing
 // the Objective Expression
 let objective = Objective.create "MaximizeRevenue" Maximize objectiveExpression
 
+// Create Total Item Maximum constraints for each item
+let maxItemConstraints =
+    ConstraintBuilder "MaxItemTotal" {
+        for item in items ->
+            sum (1.0 * numberOfItem.[All, item]) <== maxIngredients.[item]
+    }
 
-
-// Create a Constraint for the max number of Hamburger considering the number of buns
-let maxHamburger = Constraint.create "MaxHamburger" (numberOfHamburgers <== hamburgerBuns)
-// Create a Constraint for the max number of Hot Dogs considering the number of buns
-let maxHotDog = Constraint.create "MaxHotDog" (numberOfHotdogs <== hotdogBuns)
-// Create a Constraint for the Max combined weight of Hamburgers and Hotdogs
-let maxWeight = Constraint.create "MaxWeight" (numberOfHotdogs * hotdogWeight + numberOfHamburgers * hamburgerWeight <== maxTruckWeight)
-
+// Create a Constraints for the Max combined weight of items for each Location
+let maxWeightConstraints =
+    ConstraintBuilder "MaxTotalWeight" {
+        for location in locations ->
+            sum (itemWeight .* numberOfItem.[location, All]) <== maxTruckWeight.[location]
+    }
 
 // Create a Model type and pipe it through the addition of the constraints
 let model =
     Model.create objective
-    |> Model.addConstraint maxHamburger
-    |> Model.addConstraint maxHotDog
-    |> Model.addConstraint maxWeight
-
-
-
-// Create a Settings type which tells the Solver which types of underlying solver to use,
-// the time alloted for solving, and whether to write an LP file to disk
-let settings = {
-    SolverSettings.SolverType = SolverType.CBC
-    SolverSettings.MaxDuration = 10_000L
-    SolverSettings.WriteLPFile = None
-    SolverSettings.WriteMPSFile = None
-   }
+    |> Model.addConstraints maxItemConstraints
+    |> Model.addConstraints maxWeightConstraints
 
 // Call the `solve` function in the Solve module to evaluate the model
-let result = Solver.solve settings model
-
+// using the basic settings
+let result = Solver.solve Settings.basic model
 
 printfn "-- Result --"
 
@@ -69,13 +70,10 @@ printfn "-- Result --"
 // values for the Decision Variables
 match result with
 | Optimal solution ->
-    printfn "Objective Value: %f" solution.ObjectiveResult
+    printfn "Objective Value: %f" (Objective.evaluate solution objective)
 
-    for (decision, value) in solution.DecisionResults |> Map.toSeq do
-        let (DecisionName name) = decision.Name
-        printfn "Decision: %s\tValue: %f" name value
+    let values = Solution.getValues solution numberOfItem
+
+    for ((location, item), value) in values |> Map.toSeq do
+        printfn "Item: %s\tLocation: %s\tValue: %f" item location value
 | _ -> printfn $"Unable to solve. Error: %A{result}"
-
-
-// For more information see https://aka.ms/fsharp-console-apps
-//printfn "Hello from F#"

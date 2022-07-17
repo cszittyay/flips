@@ -4,10 +4,11 @@ open System
 
 
 type Zona =  Zona of string
+type Contrato = Contrato of string
 
 // 
 type ContratoTransporte (nemonico, zonaEntrega, CDC, tarifa, factorAgrupado ) = 
-        member this.Nemonico: string = nemonico
+        member this.Nemonico: Contrato = nemonico
         member this.ZonaEntrega:Zona = zonaEntrega
         member this.CDC: float = CDC
         member this.Tarifa:double = tarifa

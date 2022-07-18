@@ -19,22 +19,24 @@ let zonasEntrega = [gba; lit]
 let entregaZona =
     Map.empty.
      Add(gba, 1400).
-     Add(lit, 2300)
+     Add(lit, 3000)
 
 
 
 let tf01 = ContratoTransporte  ( Contrato "TF01", lit, 1000.0, 1.0, 70.0) 
 let tf02 = ContratoTransporte  (Contrato "TF02", lit, 2040.0, 2.0, 70.0) 
-let tf03 = ContratoTransporte  (Contrato "TF03", gba , 1000.0, 1.0, 80.0 ) 
-let tf04 = ContratoTransporte  (Contrato "TF04", gba, 2000.0, 2.0, 80.0) 
+let tf03 = ContratoTransporte  (Contrato "TF03", gba , 1000.0, 1.0, 10.0 ) 
+let tf04 = ContratoTransporte  (Contrato "TF04", gba, 2000.0, 2.0, 10.0) 
 
 // Llevarlos a una lista
 let lContratos = [tf01; tf02; tf03; tf04]
 
 let lAgrupados = transformar lContratos
+let lResiduales = contratosResiduales lContratos 
 
+let lContratosFinales = lResiduales |> List.append lAgrupados
 
-let contratos =  lAgrupados |>Seq.map (fun x -> (snd x).Nemonico, snd x) |> Map.ofSeq
+let contratos =  lContratosFinales |>List.map (fun x -> x.Nemonico, x) |> Map.ofList
 
 
 // Usando DecisionBuilder

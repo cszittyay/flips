@@ -36,7 +36,7 @@ let contratos =
     Add(tf01.Nemonico, tf01).
     Add(tf02.Nemonico, tf02).
     Add(tf03.Nemonico, tf03).
-    Add(tf04.Nemonico, tf04)
+    Add(tf04.Nemonico, tf04);
 
 
 
@@ -44,7 +44,7 @@ let contratos =
 let nomCtoZona =
     DecisionBuilder "Nominado" {
         for zona in zonasEntrega do
-        for cto in contratos.Keys ->
+        for cto in contratos.Keys  ->
              Continuous (0, infinity )
     } |> SMap2.ofSeq
 
@@ -58,7 +58,7 @@ let objective = Objective.create "Costo Tte" Minimize objectiveExpression
 
 // Crear las constraints
 // MaxNom
-let nomCDC = ConstraintBuilder "HastaCDD" { for cto in contratos.Keys -> sum( nomCtoZona.[All, cto]) <== contratos.[cto].CDC }
+let nomCDC = ConstraintBuilder "HastaCDD" { for cto in contratos.Keys -> nomCtoZona.[contratos.[cto].ZonaEntrega, cto] <== contratos.[cto].CDC }
 
 let nomZona = ConstraintBuilder "EntregZona" { for zona in entregaZona.Keys  -> sum(1.0 * nomCtoZona.[zona, All]) == float entregaZona.[zona]}
 

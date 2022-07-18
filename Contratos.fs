@@ -32,4 +32,15 @@ type EntregaZona (zona, entrega) =
 let factorUso = 0.7
 
 
+// Transformar contratos
+let transformar (ctosTte: ContratoTransporte list) =
+      let result = Seq.empty<ContratoTransporte>
+      let entregaZona = ctosTte |> List.groupBy (fun x -> x.ZonaEntrega) |> List.map (fun x -> fst x, snd x |> List.sumBy(fun z -> z.CDC * z.FactorAgrupado / 100.0))
+      // Crear el contrato 'Agrupado' de la zona
+      let agrupadosZona = entregaZona |> List.filter (fun ez -> snd ez > 0) 
+      agrupadosZona |> List.map (fun x -> fst x,  ContratoTransporte( Contrato(sprintf "Agr%s" (string (fst x))) , (fst x) ,(snd x), 1.0, 0.0 ) )
+      // for x in agrupadosZona do  Seq.append result [] 
+
+let toMap (ctosTte : ContratoTransporte seq) =
+      ctosTte |> Seq.map (fun x -> x.Nemonico, x) |> Map.ofSeq
 

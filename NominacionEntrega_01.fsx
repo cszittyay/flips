@@ -23,20 +23,23 @@ let entregaZona =
 
 
 
-let tf01 = ContratoTransporte  ( Contrato "TF01", lit, 1000.0, 1.0, 70) 
-let tf02 = ContratoTransporte  (Contrato "TF02", lit, 2040.0, 2.0, 70) 
-let tf03 = ContratoTransporte  (Contrato "TF03", gba , 1000.0, 1.0, 0 ) 
-let tf04 = ContratoTransporte  (Contrato "TF03", gba, 2000.0, 2.0, 0) 
+let tf01 = ContratoTransporte  ( Contrato "TF01", lit, 1000.0, 1.0, 70.0) 
+let tf02 = ContratoTransporte  (Contrato "TF02", lit, 2040.0, 2.0, 70.0) 
+let tf03 = ContratoTransporte  (Contrato "TF03", gba , 1000.0, 1.0, 80.0 ) 
+let tf04 = ContratoTransporte  (Contrato "TF03", gba, 2000.0, 2.0, 80.0) 
 
-// los contratos como lista
-let contratosTte = [tf01; tf02; tf03; tf04]
+// Llevarlos a una lista
+let lContratos = [tf01; tf02; tf03; tf04]
 
-let contratos =
-   Map.empty.
-    Add(tf01.Nemonico, tf01).
-    Add(tf02.Nemonico, tf02).
-    Add(tf03.Nemonico, tf03).
-    Add(tf04.Nemonico, tf04)
+let lAgrupados = transformar lContratos
+
+
+let contratos =  lAgrupados |>Seq.map (fun x -> x.Nemonico, x) |> Map.ofSeq
+
+
+printfn "\nLos contratos agrupados"
+printfn "%A" contratos
+printfn "***********************\n"
 
 
 

@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="SlicingAndUnitOfMeasure.fsx" />
+    <None Include="DecisionBuilder.fsx" />
+    <None Include="ConstraintBuilder.fsx" />
+    <None Include="FoodTrackUsingMap.fsx" />
     <Compile Include="Contratos.fs" />
     <None Include="NominacionEntrega_01.fsx" />
     <None Include="FlipsMac.fsx" />

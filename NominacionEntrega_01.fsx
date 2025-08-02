@@ -39,6 +39,8 @@ let lContratosFinales = lResiduales |> List.append lAgrupados
 let contratos =  lContratosFinales |>List.map (fun x -> x.Nemonico, x) |> Map.ofList
 
 
+lAgrupados |> Seq.iter (fun x -> printfn  $"{x.Nemonico} {x.ZonaEntrega} {x.CDC} {x.Tarifa} {x.FactorAgrupado}")
+
 // Usando DecisionBuilder
 let nomCtoZona =
     DecisionBuilder "Nominado" {
@@ -72,4 +74,13 @@ let model =
 
     
 let result = Solver.solve Settings.basic model
-printfn "%A" result
+
+match result with
+| Optimal solution ->
+    printfn "XX: Objective Value: %A" (Objective.evaluate solution objective)
+
+    for (decision, value) in solution.DecisionResults |> Map.toSeq do
+        let (DecisionName name) = decision.Name
+        printfn "Decision: %s\tValue: %f" name value
+| _ -> printfn $"Unable to solve. Error: %A{result}"
+

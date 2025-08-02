@@ -41,4 +41,4 @@ let transformar (ctosTte: ContratoTransporte list) =
 
 // Crear los contratos con CDC residual: CDC = (1 - FactorAgrupado / 100.0)
 let contratosResiduales (ctosTte: ContratoTransporte list) =
-      ctosTte |> List.map (fun x ->  ContratoTransporte( Contrato(sprintf "Agr%s" (string (x.Nemonico))) , x.ZonaEntrega, x.CDC *( 1.0 - x.FactorAgrupado / 100.0) ,x.Tarifa, 0.0 ) )
+      ctosTte |> List.map (fun x ->  ContratoTransporte( Contrato(sprintf "%s" (string (x.Nemonico))) , x.ZonaEntrega, x.CDC *( 1.0 - x.FactorAgrupado / 100.0) ,x.Tarifa, 0.0 ) )

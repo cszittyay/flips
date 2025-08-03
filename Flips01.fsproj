@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="NominacionGyT NTS.fsx" />
     <None Include="SlicingAndUnitOfMeasure.fsx" />
     <None Include="DecisionBuilder.fsx" />
     <None Include="ConstraintBuilder.fsx" />

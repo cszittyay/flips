@@ -1,12 +1,13 @@
-﻿#r "nuget: Flips,2.4.8"
+﻿#r "nuget: Flips,2.4.10"
 fsi.ShowDeclarationValues <- false
 
 open Flips
 open Flips.Types
 
 // Create Decisions for your problem
-let x1 = Decision.createContinuous "x1" 0.0 infinity
-let x2 = Decision.createContinuous "x2" 0.0 infinity
+let x1 = Decision.createContinuous "x1" 0.0 10.0
+
+let x2 = Decision.createContinuous "x2" 0.0 3.2
 
 // Create a LinearExpression which quantifies your goal
 let objExpr = 2.0 * x1 + 3.0 * x2

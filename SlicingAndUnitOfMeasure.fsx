@@ -1,4 +1,4 @@
-﻿#r "nuget: Flips"
+﻿#r "nuget: Flips,2.4.10"
 fsi.ShowDeclarationValues <- false
 
 open Flips

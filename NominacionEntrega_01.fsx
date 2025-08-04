@@ -47,8 +47,7 @@ let nomCtoZona =
         for zona in zonasEntrega do
         // Filtrar la zona de entrega dle contrato
         let ctoZona = contratos.Values |> Seq.filter (fun x -> x.ZonaEntrega = zona) |> Seq.map (fun x -> x.Nemonico)
-        for cto in ctoZona  ->
-             Continuous (0, infinity )
+        for cto in ctoZona  -> Continuous (0, infinity )
     } |> SMap2.ofSeq
 
 

@@ -1,190 +1,70 @@
-﻿
+﻿open System
 open Flips
 open Flips.Types
 open Flips.SliceMap
 open Flips.UnitsOfMeasure
 
 
-open System.Diagnostics
-Debugger.Break()
 
 type [<Measure>] USD
-type [<Measure>] GJ
-
-type Punto = Punto of string
-type Contrato = Contrato of string
-
-type ContratoGas = {
-    Contrato: Contrato
-    PuntoRX: Punto
-    CMD: float<GJ>
-    Precio: float<USD/GJ>
-}
-
-type ContratoTransporte = {
-    Contrato: Contrato
-    PuntoRX: Punto
-    PuntoEX: Punto
-    CMD: float<GJ>
-    Precio: float<USD/GJ>
-}
-
-type Entrega = {
-    PuntoEX: Punto
-    Entrega: float<GJ>
-}
-
-
-
-
-let completarContratosGas (contratosExistentes: ContratoGas list) : ContratoGas list =
-    // Extraer todos los contratos y puntos posibles
-    let contratosUnicos = contratosExistentes |> List.map (fun c -> c.Contrato) |> List.distinct
-    let puntosUnicos = contratosExistentes |> List.map (fun c -> c.PuntoRX) |> List.distinct
-
-    let existentesSet = contratosExistentes |> List.map (fun c -> c.Contrato, c.PuntoRX) |> Set.ofList
-
-    let contratosFaltantes =
-        [ for contrato in contratosUnicos do
-            for punto in puntosUnicos do
-                if not (Set.contains (contrato, punto) existentesSet) then
-                    yield {
-                        Contrato = contrato
-                        PuntoRX = punto
-                        CMD = 0.0<GJ>
-                        Precio = 1.0<USD/GJ>
-                    } ]
-
-    contratosExistentes @ contratosFaltantes
-
-    
-
-let completarContratosTransporte (contratosExistentes: ContratoTransporte list) : ContratoTransporte list =
-    // Extraer todos los contratos y puntos posibles
-    let contratosUnicos = contratosExistentes |> List.map (fun c -> c.Contrato) |> List.distinct
-    let puntosUnicosRx = contratosExistentes |> List.map (fun c -> c.PuntoRX) |> List.distinct
-    let puntosUnicosEx = contratosExistentes |> List.map (fun c -> c.PuntoEX) |> List.distinct
-
-
-    let existentesSet = contratosExistentes |> List.map (fun c -> c.Contrato, c.PuntoRX, c.PuntoEX) |> Set.ofList
-
-    let contratosFaltantes =
-        [ for contrato in contratosUnicos do
-            for puntoRx in puntosUnicosRx do
-                for puntoEx in puntosUnicosEx do
-                if not (Set.contains (contrato, puntoRx, puntoEx) existentesSet) then
-                    yield {
-                        Contrato = contrato
-                        PuntoRX = puntoRx
-                        PuntoEX = puntoEx
-                        CMD = 0.0<GJ>
-                        Precio = 1.0<USD/GJ>
-                    } ]
-
-    contratosExistentes @ contratosFaltantes
-
-
+type [<Measure>] Item
+type [<Measure>] Lb
 
 // Declare the parameters for our model
-let puntosRX = [Punto "V061"; Punto "V33"; Punto "V40"]
-let puntosEX = [Punto "E01"; Punto "E02"; Punto "E03"]
-
-let contratosGas = 
+let items = ["Hamburger"; "HotDog"; "Pizza"]
+let locations = ["Woodstock"; "Sellwood"; "Portland"]
+let profit = 
     [
-        ({Contrato = Contrato "C1"; PuntoRX = Punto "V061"; CMD = 200.0<GJ>; Precio = 2.50<USD/GJ>});
-        ({Contrato = Contrato "C2"; PuntoRX = Punto "V33"; CMD = 320.0<GJ>; Precio = 2.60<USD/GJ>});
-        ({Contrato = Contrato "C3"; PuntoRX = Punto "V40"; CMD = 430.0<GJ>; Precio = 2.55<USD/GJ>})
-    ]
+        (("Woodstock", "Hamburger"), 19.50<USD/Item>); (("Sellwood", "Hamburger"), 1.40<USD/Item>); (("Portland", "Hamburger"), 1.90<USD/Item>)
+        (("Woodstock", "HotDog"   ), 1.20<USD/Item>); (("Sellwood", "HotDog"   ), 1.50<USD/Item>); (("Portland", "HotDog"   ), 1.80<USD/Item>)
+        (("Woodstock", "Pizza"    ), 2.20<USD/Item>); (("Sellwood", "Pizza"    ), 1.70<USD/Item>); (("Portland", "Pizza"    ), 2.00<USD/Item>)
+    ] |> SMap2.ofList
 
-let contratosGasCompleto = completarContratosGas contratosGas
+let maxIngredients = SMap.ofList [("Hamburger", 900.0<Item>); ("HotDog", 600.0<Item>); ("Pizza", 400.0<Item>)]
+let itemWeight = SMap.ofList [("Hamburger", 15.5<Lb/Item>); ("HotDog", 0.4<Lb/Item>); ("Pizza", 0.6<Lb/Item>)]
+let maxTruckWeight = SMap.ofList [("Woodstock", 200.0<Lb>); ("Sellwood", 30.0<Lb>); ("Portland", 28.0<Lb>) ]
 
-let dContratosGas = contratosGasCompleto |> List.map (fun c -> (c.Contrato, c.PuntoRX), c) |> SMap2
-
-let dCtoGasPuntoPrecio = contratosGasCompleto |> List.map (fun c -> (c.Contrato, c.PuntoRX), c.Precio) |> SMap2
-
-
-// Transporte contracts
-
-let contratosTransporte = 
-    [
-        ({Contrato = Contrato "T1"; PuntoRX = Punto "V061"; PuntoEX = Punto "E01"; CMD = 100.0<GJ>; Precio = 2.50<USD/GJ>});
-        ({Contrato = Contrato "T1"; PuntoRX = Punto "V33"; PuntoEX = Punto "E02"; CMD = 160.0<GJ>; Precio = 2.60<USD/GJ>});
-        ({Contrato = Contrato "T1"; PuntoRX = Punto "V40"; PuntoEX = Punto "E03"; CMD = 230.0<GJ>; Precio = 2.55<USD/GJ>});
-
-    ]
-
-
-// completar contratos de transporte
-let contratosTransporteCompleto = completarContratosTransporte contratosTransporte
-
-
-    
-let dContratosTransporte = contratosTransporteCompleto |> List.map (fun c -> (c.Contrato, c.PuntoRX, c.PuntoEX), c.CMD) |> SMap3.ofList
-
-let dCtoTtePrecio = contratosTransporteCompleto |> List.map (fun c -> c.Contrato, c.Precio) |> SMap
-
-
-let entregas = 
-    [
-        { PuntoEX = Punto "E01"; Entrega = 100.0<GJ> }
-        { PuntoEX = Punto "E02"; Entrega = 150.0<GJ> }
-        { PuntoEX = Punto "E03"; Entrega = 200.0<GJ> }
-    ]
-
-let dEntregas = entregas |> List.map (fun c -> c.PuntoEX, c.Entrega) |> SMap
-
-
-// Create Decisions for each puntoRX and puntoEX using a DecisionBuilder
-// Turn the result into a `SMap2`   
-// La nominacion de los contratos de gas por punto y contrato
-let nomGas =        
-    DecisionBuilder<GJ> "NomGas" {
-        for (cto,pto) in dCtoGasPuntoPrecio.Keys  -> Continuous (0.<GJ>, dContratosGas.[cto, pto].CMD)
-    } 
-    |> SMap2.ofSeq
-
-// La nominación de la entrega de transporte: por Contrato y PuntoEX
-let nomTte =        
-    DecisionBuilder<GJ> "NomTte" {
-        for (cto, ptoRx, ptoEx) in dContratosTransporte.Keys   -> Continuous (0.<GJ>, dContratosTransporte.[cto, ptoRx, ptoEx])
-    } |> SMap3.ofSeq
-
+// Create Decisions for each loation and item using a DecisionBuilder
+// Turn the result into a `SMap2`
+let numberOfItem =
+    DecisionBuilder<Item> "NumberOf" {
+        for location in locations do
+        for item in items ->
+            Continuous (0.0<Item>, 1_000_000.0<Item>)
+    } |> SMap2.ofSeq
 
 // Create the Linear Expression for the objective
-let objectiveExpression = sum (dCtoGasPuntoPrecio .* nomGas)
+let objectiveExpression = sum (profit .* numberOfItem)
 
+// Create an Objective with the name "MaximizeRevenue" the goal of Maximizing
+// the Objective Expression
+let objective = Objective.create "MaximizeRevenue" Maximize objectiveExpression
 
-let objective = Objective.create "Costo Gas" Minimize objectiveExpression
-
-
-// Agregar las restricciones
-
-
-// Create a Constraints: La entrega de transporte debe ser igual a la entrega de gas
-let entregaConstraint =
-    ConstraintBuilder "Entrega" {
-        for ptoEx in puntosEX ->
-            sum(nomTte.[All, All, ptoEx]) == dEntregas.[ptoEx]
+// Create Total Item Maximum constraints for each item
+let maxItemConstraints =
+    ConstraintBuilder "MaxItemTotal" {
+        for item in items ->
+            sum (1.0 * numberOfItem.[All, item]) <== maxIngredients.[item]
     }
 
-
-let gasConstraint =
-    ConstraintBuilder "Gas" {
-        for pto in puntosRX ->
-            sum(nomTte.[All, pto, All]) == sum(nomGas.[All, pto])
+// Create a Constraints for the Max combined weight of items for each Location
+let maxWeightConstraints =
+    ConstraintBuilder "MaxTotalWeight" {
+        for location in locations ->
+            sum (itemWeight .* numberOfItem.[location, All]) <== maxTruckWeight.[location]
     }
 
-
+// Create a Model type and pipe it through the addition of the constraints
 let model =
     Model.create objective
-    |> Model.addConstraints entregaConstraint
-    |> Model.addConstraints gasConstraint
+    |> Model.addConstraints maxItemConstraints
+    |> Model.addConstraints maxWeightConstraints
 
-
+// Call the `solve` function in the Solve module to evaluate the model
+// using the basic settings
 let result = Solver.solve Settings.basic model
 
 printfn "-- Result --"
-
 
 // Match the result of the call to solve
 // If the model could not be solved it will return a `Suboptimal` case with a message as to why
@@ -194,18 +74,8 @@ match result with
 | Optimal solution ->
     printfn "Objective Value: %f" (Objective.evaluate solution objective)
 
-    let snomGas = Solution.getValues solution nomGas
-    let snomTte = Solution.getValues solution nomTte
+    let values = Solution.getValues solution numberOfItem
 
-    for ctoG in  snomGas.Keys do
-        printfn "Item: %s\tValue: %f" (string ctoG) snomGas.[ctoG]
-
-    printfn $"\nNominación Transporte:"
-
-    for (ctoT, ptoRx, ptoEx) in  snomTte.Keys do
-        printfn "Cto: %s\tPtoRx: %s\tPtoEx: %s\tValue: %f" (string ctoT) (string ptoRx)  (string ptoEx) snomTte.[ctoT,ptoRx, ptoEx]
-
+    for ((location, item), value) in values |> Map.toSeq do
+        printfn "Item: %s\tLocation: %s\tValue: %f" item location value
 | _ -> printfn $"Unable to solve. Error: %A{result}"
-
-
-
